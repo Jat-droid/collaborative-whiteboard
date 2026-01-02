@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import './Whiteboard.css';
 
-const socket = io("http://localhost:3001");
+const socket = io("https://whiteboard-backend-bymg.onrender.com");
 
 const Whiteboard = () => {
   const canvasRef = useRef(null);
