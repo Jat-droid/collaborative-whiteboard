@@ -1,0 +1,108 @@
+.whiteboard-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.canvas-board {
+  display: block;
+  background-color: #f0f0f0;
+  cursor: crosshair;
+}
+
+.toolbar {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%); 
+  background: white;
+  padding: 10px 20px;
+  border-radius: 50px; /* Pill shape */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  z-index: 10;
+}
+
+.color-picker {
+  display: flex;
+  gap: 10px;
+  border-right: 2px solid #eee;
+  padding-right: 20px;
+}
+
+.color-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.color-btn:hover {
+  transform: scale(1.2);
+}
+
+.clear-btn {
+  background: none;
+  border: none;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.clear-btn:hover {
+  color: #ff4757;
+}
+/* Login Screen Styles */
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f2f5;
+}
+
+.login-box {
+  background: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.room-input {
+  padding: 10px;
+  width: 200px;
+  margin-right: 10px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.join-btn {
+  padding: 10px 20px;
+  background-color: #2ed573;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.join-btn:hover {
+  background-color: #26af61;
+}
+
+.room-info {
+  background: #eee;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  color: #555;
+}
