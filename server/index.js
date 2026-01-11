@@ -1,79 +1,119 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const cors = require("cors");
 const mongoose = require("mongoose");
-
-// 1. Import our new clean Model
-const Line = require("./models/Line"); 
+const cors = require("cors");
+require("dotenv").config();
+const authRoutes = require("./routes/auth"); // Authentication routes
+const Line = require("./models/Line"); // Database Model
 
 const app = express();
+
+// --- MIDDLEWARE ---
 app.use(cors());
+app.use(express.json());
+
+// --- ROUTES ---
+app.use("/api/auth", authRoutes);
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] },
+  cors: {
+    origin: "*", 
+    methods: ["GET", "POST"],
+  },
 });
 
-// 2. Connect to Database (Replace with YOUR Password from Day 7)
-// ⚠️ Keep your actual password here!
-const MONGO_URI = "mongodb+srv://admin:virat123@cluster0.sxoykym.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
-mongoose.connect(MONGO_URI)
+// Connect to MongoDB (Replace with your connection string if needed)
+mongoose
+.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+  .catch((err) => console.log("❌ MongoDB Error:", err));
+
+// --- MEMORY STORAGE FOR REDO ---
+// Key: roomId, Value: Array of deleted line objects
+const redoStacks = {};
 
 io.on("connection", (socket) => {
-  console.log(`User Connected: ${socket.id}`);
-
-  // 1. Join Room & Load Specific History
+  // 1. Join Room
   socket.on("join_room", async (roomId) => {
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room: ${roomId}`);
-
-    // 🔍 FILTER: Only find lines that belong to this Room ID
-    const roomHistory = await Line.find({ roomId }); 
-    
-    // Send history ONLY to the person who just joined
-    socket.emit("load_canvas", roomHistory);
+    // Send existing history to the user
+    const history = await Line.find({ roomId });
+    socket.emit("load_canvas", history);
   });
 
-  // 2. Draw & Save with Room ID
+  // 2. Draw Line (Updated for Redo Logic)
   socket.on("draw_line", async (data) => {
-    const { roomId, prevPoint, currentPoint, color } = data;
-
-    // Save to DB with the Room ID tag
-    const newLine = new Line({
-      roomId, // 👈 Important: Save the tag
-      prevPoint,
-      currentPoint,
-      color
-    });
-    
-    try {
-        await newLine.save();
-        // Broadcast to neighbors in the room
-        socket.to(roomId).emit("draw_line", { prevPoint, currentPoint, color });
-    } catch (err) {
-        console.error("Error saving line:", err);
+    // If user draws something new, the "Redo" future is invalid. Clear it.
+    if (redoStacks[data.roomId]) {
+      redoStacks[data.roomId] = [];
     }
+
+    // Save to DB
+    const newLine = new Line(data);
+    await newLine.save();
+
+    // Broadcast to others
+    socket.broadcast.to(data.roomId).emit("draw_line", data);
   });
 
   // 3. Clear Specific Room
   socket.on("clear", async (roomId) => {
-    // Delete only lines with this Room ID
     await Line.deleteMany({ roomId });
-    
-    // Tell everyone in the room to wipe their screen
+    // Also clear the redo stack for this room
+    redoStacks[roomId] = [];
     io.to(roomId).emit("clear");
   });
 
-  socket.on("disconnect", () => {
-    console.log("User Disconnected", socket.id);
+// 4. UNDO Logic (Debug Version)
+  socket.on("undo", async (roomId) => {
+    console.log(`↩️ Undo requested for Room: ${roomId}`); // DEBUG LOG
+
+    const lastLine = await Line.findOne({ roomId }).sort({ _id: -1 });
+
+    if (lastLine) {
+      console.log(`Found line to delete: ${lastLine._id}`); // DEBUG LOG
+      
+      await Line.findByIdAndDelete(lastLine._id);
+
+      if (!redoStacks[roomId]) redoStacks[roomId] = [];
+      redoStacks[roomId].push(lastLine);
+
+      const allLines = await Line.find({ roomId });
+      
+      // Emit events to frontend
+      io.to(roomId).emit("clear"); 
+      io.to(roomId).emit("load_canvas", allLines);
+      
+      console.log(`Board refreshed with ${allLines.length} lines`); // DEBUG LOG
+    } else {
+      console.log("No lines found to undo!"); // DEBUG LOG
+    }
+  });
+
+  // 5. REDO Logic (Debug Version)
+  socket.on("redo", async (roomId) => {
+    console.log(`↪️ Redo requested for Room: ${roomId}`); // DEBUG LOG
+    
+    if (redoStacks[roomId] && redoStacks[roomId].length > 0) {
+      const lineToRestore = redoStacks[roomId].pop();
+      console.log(`Restoring line...`); // DEBUG LOG
+
+      const newLineData = lineToRestore.toObject();
+      delete newLineData._id; 
+      const newLine = new Line(newLineData);
+      await newLine.save();
+
+      io.to(roomId).emit("draw_line", newLine);
+    } else {
+        console.log("Redo stack is empty."); // DEBUG LOG
+    }
   });
 });
 
-server.listen(3001, () => {
-  console.log("SERVER RUNNING ON 3001");
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`SERVER RUNNING ON ${PORT}`);
 });
