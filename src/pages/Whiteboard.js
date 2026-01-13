@@ -69,6 +69,17 @@ const Whiteboard = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [roomId]);
+  const copyRoomLink = () => {
+
+const roomUrl = window.location.href; // Gets the current URL
+
+navigator.clipboard.writeText(roomUrl).then(() => {
+
+alert("Link copied to clipboard! Share it with a friend.");
+
+});
+
+};
 
   // 🎨 SMART DRAW FUNCTION
   const drawLine = (start, end, ctx, color) => {
@@ -128,7 +139,9 @@ const Whiteboard = () => {
     <div className="whiteboard-container">
       <div className="toolbar">
         <div className="room-info">Room: <strong>{roomId}</strong></div>
-        
+        <button className="copy-btn" onClick={copyRoomLink} title="Copy Link">
+            🔗 Share
+        </button>
         <div className="color-picker">
           <button className="color-btn" style={{backgroundColor: 'black'}} onClick={() => setColor('#000000')}/>
           <button className="color-btn" style={{backgroundColor: 'red'}} onClick={() => setColor('red')}/>
@@ -150,7 +163,13 @@ const Whiteboard = () => {
           <button className="tool-btn" onClick={handleUndo} title="Undo (Ctrl+Z)">↩️</button>
           <button className="tool-btn" onClick={handleRedo} title="Redo (Ctrl+Y)">↪️</button>
           
-          <button className="clear-btn" onClick={() => socket.emit("clear", roomId)}>🗑️ Clear</button>
+          <button className="clear-btn" onClick={() => {
+    if (window.confirm("Are you sure you want to clear the board? This cannot be undone!")) {
+        socket.emit("clear", roomId);
+    }
+}}>
+    🗑️ Clear
+</button>
           <button className="logout-btn" onClick={handleLogout} style={{backgroundColor: '#6c757d', marginLeft: '10px'}}>Exit</button>
         </div>
       </div>

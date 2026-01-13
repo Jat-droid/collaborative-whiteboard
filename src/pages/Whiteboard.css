@@ -106,3 +106,47 @@
   font-size: 14px;
   color: #555;
 }
+.copy-btn {
+  background: #ffc107;
+  border: none;
+  padding: 8px 12px;
+  margin-left: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.copy-btn:hover {
+  background: #e0a800;
+}
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+  .toolbar {
+    flex-wrap: wrap; /* Let buttons drop to next line if needed */
+    height: auto;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .room-info {
+    width: 100%; /* Room ID takes full width on top */
+    text-align: center;
+    margin-bottom: 5px;
+  }
+  
+  .color-picker {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .action-buttons {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 5px;
+  }
+  
+  .tool-btn, .clear-btn, .logout-btn {
+    font-size: 12px; /* Smaller text */
+    padding: 8px;
+  }
+}
